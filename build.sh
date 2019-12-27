@@ -1,7 +1,10 @@
 mkdir -p output
 
-mkdir -p output/css
-rsync css/* output/css
+rsync -a static/ output
+
+cat templates/header.html 404.html templates/footer.html \
+    | sed 's/@title/404/' \
+    > output/404.html
 
 >output/index.html
 sed 's/@title/home/' templates/header.html >> output/index.html
@@ -26,3 +29,5 @@ for post in posts/*; do
 done
 
 cat templates/post-list-end.html templates/footer.html >> output/index.html
+
+cat output/index.html > output/posts/index.html
