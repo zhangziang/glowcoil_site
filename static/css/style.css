@@ -75,10 +75,26 @@ div#contents img, div#contents video {
   margin-right: auto;
 }
 
+h1 {
+  margin: 13px 0 8px 0;
+  font-weight: 300;
+  font-size: 24pt;
+}
+
 h2 {
   margin: 13px 0 8px 0;
-  font-size: 32px;
-  font-weight: 300;
+  padding: 2px 5px;
+  font-size: 18pt;
+  font-weight: 400;
+  background-color: rgb(235, 240, 245);
+}
+
+h3 {
+  font-family: "source-sans-pro";
+  font-size: 10pt;
+  font-weight: bold;
+  background-color: rgb(235, 240, 245);
+  padding: 2px 5px;
 }
 
 p {
@@ -90,12 +106,9 @@ div#footer {
   padding: 10px 0px 50px 0px;
 }
 
-span.title {
+span.date {
   background-color: rgb(235, 240, 245);
   padding: 2px 5px;
-}
-
-div#footer {
 }
 
 div#footer a {
@@ -124,4 +137,8 @@ a#rss {
   row-gap: 10px;
   column-gap: 8px;
   margin: 12px 0px;
+}
+
+ul {
+  padding-left: 24px;
 }
