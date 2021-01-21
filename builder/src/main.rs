@@ -59,7 +59,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut contents_path = post.path().to_path_buf();
         contents_path.push("index.html");
 
-        let contents = render_katex(&read_to_string(contents_path)?)?;
+        let contents = if info_lines.len() > 2 && info_lines[2] == "katex" {
+            render_katex(&read_to_string(contents_path)?)?
+        } else {
+            read_to_string(contents_path)?
+        };
 
         let mut vars = HashMap::new();
         vars.insert("date".to_string(), date);
@@ -155,63 +159,16 @@ fn substitute(input: &str, vars: &HashMap<String, String>) -> String {
 }
 
 fn render_katex(input: &str) -> Result<String, Box<dyn Error>> {
-    let mut output = String::with_capacity(input.len());
-    let mut chars = input.chars();
-    while let Some(c) = chars.next() {
-        if c == '\\' {
-            if let Some(c) = chars.next() {
-                if c == '(' {
-                    let mut string = String::new();
-                    while let Some(c) = chars.next() {
-                        if c == '\\' {
-                            if let Some(c) = chars.next() {
-                                if c == ')' {
-                                    break;
-                                } else {
-                                    string.push('\\');
-                                    string.push(c);
-                                }
-                            } else {
-                                string.push(c);
-                            }
-                        } else {
-                            string.push(c);
-                        }
-                    }
+    use std::io::Write;
+    use std::process::{Command, Stdio};
 
-                    output.push_str(&katex::render(&string)?);
-                } else if c == '[' {
-                    let mut string = String::new();
-                    while let Some(c) = chars.next() {
-                        if c == '\\' {
-                            if let Some(c) = chars.next() {
-                                if c == ']' {
-                                    break;
-                                } else {
-                                    string.push('\\');
-                                    string.push(c);
-                                }
-                            } else {
-                                string.push(c);
-                            }
-                        } else {
-                            string.push(c);
-                        }
-                    }
+    let mut child = Command::new("node")
+        .arg("katex.js")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()?;
 
-                    let opts = katex::Opts::builder().display_mode(true).build()?;
-                    output.push_str(&katex::render_with_opts(&string, opts)?);
-                } else {
-                    output.push('\\');
-                    output.push(c);
-                }
-            } else {
-                output.push('\\');
-            }
-        } else {
-            output.push(c);
-        }
-    }
-
-    Ok(output)
+    child.stdin.as_mut().ok_or("couldn't open katex")?.write_all(input.as_bytes())?;
+    let output = child.wait_with_output()?;
+    Ok(String::from_utf8_lossy(&output.stdout).into_owned())
 }
