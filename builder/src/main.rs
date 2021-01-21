@@ -30,7 +30,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     for post in read_dir("posts/")? {
         let post = post?;
         let mut url = "posts/".to_string();
-        url.push_str(&post.file_name().into_string().map_err(|_| "")?[9..].to_string());
+        let post_filename = post.file_name().into_string().map_err(|_| "")?;
+        if post_filename.starts_with('_') { continue; }
+        url.push_str(&post_filename[9..].to_string());
 
         let mut info_path = post.path().to_path_buf();
         info_path.push("info.txt");
