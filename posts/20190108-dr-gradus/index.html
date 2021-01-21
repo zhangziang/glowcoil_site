@@ -1,7 +1,0 @@
-<p>I wrote a website over the holiday, called <a href="https://drgrad.us">Dr. Gradus</a> (with thanks to <a href="https://en.wikipedia.org/wiki/Children%27s_Corner#1._Doctor_Gradus_ad_Parnassum">Debussy</a> and <a href="https://en.wikipedia.org/wiki/Johann_Joseph_Fux#Gradus_ad_Parnassum">Fux</a>), and deployed it on New Year's Day. It's a place to post brief worklogs on personal projects, optionally accompanied by links. A leaderboard keeps track of unbroken weekly streaks of worklogs.</p>
-
-<p><img src="/posts/dr-gradus/gradus.png"></img></p>
-
-<p>I wrote Dr. Gradus so that whenever a friend says “I wish I spent more of my time making things,” I can tell them to start posting worklogs. The hope is that social pressure can help bridge the gap between long-term goals and short-term behavior.</p>
-
-<p>There are about 15 logs so far. The way it's been used so far has been pleasantly unexpected; I like that people have been logging homework assignments, studying, and yak-shaving. I'm looking forward to seeing where it goes.</p>
