@@ -82,6 +82,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         write(post_dir, substitute(&post, &vars))?;
     }
 
+    posts.sort_by(|a, b| a.2.cmp(&b.2).reverse());
+
     {
         let mut vars = HashMap::new();
         vars.insert("title".to_string(), "home".to_string());
