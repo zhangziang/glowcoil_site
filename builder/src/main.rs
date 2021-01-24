@@ -176,3 +176,18 @@ fn render_katex(input: &str) -> Result<String, Box<dyn Error>> {
     let output = child.wait_with_output()?;
     Ok(String::from_utf8_lossy(&output.stdout).into_owned())
 }
+
+fn syntax_highlight(lang: &str, input: &str) -> Result<String, Box<dyn Error>> {
+    use syntect::parsing::SyntaxSet;
+    use syntect::highlighting::{Color, ThemeSet};
+    use syntect::html::highlighted_html_for_string;
+
+    let ss = SyntaxSet::load_defaults_newlines();
+    let ts = ThemeSet::load_defaults();
+
+    let syntax = ss.find_syntax_by_token(lang).ok_or(format!("language \"{}\" not found", lang))?;
+
+    let theme = &ts.themes["base16-ocean.light"];
+    let bg = theme.settings.background.unwrap_or(Color::WHITE);
+    Ok(highlighted_html_for_string(input, &ss, &syntax, theme))
+}
