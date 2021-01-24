@@ -61,11 +61,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut contents_path = post.path().to_path_buf();
         contents_path.push("index.html");
 
-        let contents = if info_lines.len() > 2 && info_lines[2] == "katex" {
-            render_katex(&read_to_string(contents_path)?)?
-        } else {
-            read_to_string(contents_path)?
-        };
+        let contents = render_markdown(&render_katex(&read_to_string(contents_path)?)?)?;
 
         let mut vars = HashMap::new();
         vars.insert("date".to_string(), date);
@@ -160,6 +156,77 @@ fn substitute(input: &str, vars: &HashMap<String, String>) -> String {
     }
 
     output
+}
+
+fn render_markdown(input: &str) -> Result<String, Box<dyn Error>> {
+    use pulldown_cmark::{CodeBlockKind, Event::*, Parser, Tag::*, escape::{escape_href, escape_html}};
+
+    let mut output = String::new();
+
+    let mut parser = Parser::new(input).into_offset_iter();
+    while let Some((event, range)) = parser.next() {
+        match event {
+            Start(Paragraph) => output.push_str("<p>"),
+            End(Paragraph) => output.push_str("</p>"),
+            Start(Heading(_)) => output.push_str("<div class=\"heading\">"),
+            End(Heading(_)) => output.push_str("</div>"),
+            Start(CodeBlock(info)) => {
+                let lang = if let CodeBlockKind::Fenced(info) = info {
+                    info.split(' ').next().unwrap().to_string()
+                } else {
+                    String::new()
+                };
+                let mut code_range = range.end..range.start;
+                while let Some((event, range)) = parser.next() {
+                    match event {
+                        End(CodeBlock(_)) => {
+                            break;
+                        }
+                        Text(_) => {
+                            code_range.start = code_range.start.min(range.start);
+                            code_range.end = code_range.end.max(range.end);
+                        }
+                        _ => {}
+                    }
+                }
+                code_range.end = code_range.end.max(code_range.start);
+                output.push_str(&syntax_highlight(&lang, &input[code_range])?);
+            }
+            Start(List(None)) => output.push_str("<ul>"),
+            End(List(None)) => output.push_str("</ul>"),
+            Start(List(Some(1))) => output.push_str("<ol>"),
+            Start(List(Some(start))) => {
+                output.push_str("<ol start=\"");
+                output.push_str(&format!("{}", start));
+                output.push_str("\">\n")
+            }
+            End(List(Some(_))) => output.push_str("</ol>"),
+            Start(Item) => output.push_str("<li>"),
+            End(Item) => output.push_str("</li>"),
+            Start(Emphasis) => output.push_str("<em>"),
+            End(Emphasis) => output.push_str("</em>"),
+            Start(Strong) => output.push_str("<strong>"),
+            End(Strong) => output.push_str("</strong>"),
+            Start(Strikethrough) => output.push_str("<del>"),
+            End(Strikethrough) => output.push_str("</del>"),
+            Start(Link(_, dest, _)) => {
+                output.push_str("<a href=\"");
+                escape_href(&mut output, &dest)?;
+                output.push_str("\">");
+            }
+            End(Link(_, _, _)) => output.push_str("</a>"),
+            Text(text) => escape_html(&mut output, &text)?,
+            Code(text) => {
+                output.push_str("<code>");
+                escape_html(&mut output, &text)?;
+                output.push_str("</code>");
+            }
+            Html(html) => output.push_str(&html),
+            _ => {}
+        }
+    }
+
+    Ok(output)
 }
 
 fn render_katex(input: &str) -> Result<String, Box<dyn Error>> {

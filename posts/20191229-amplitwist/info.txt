@@ -1,3 +1,2 @@
 the amplitwist, the conjugate transpose, and the complex derivative
 2019-12-29
-katex
