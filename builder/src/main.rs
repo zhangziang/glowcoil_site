@@ -51,7 +51,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         for file in read_dir(post.path())? {
             let file = file?;
             let file_name = file.file_name();
-            if file_name != "index.html" && file_name != "info.txt" {
+            if file_name != "index.md" && file_name != "info.txt" {
                 let mut out_path = out_dir.clone();
                 out_path.push(file_name);
                 copy(file.path(), out_path)?;
@@ -59,7 +59,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         let mut contents_path = post.path().to_path_buf();
-        contents_path.push("index.html");
+        contents_path.push("index.md");
 
         let contents = render_markdown(&render_katex(&read_to_string(contents_path)?)?)?;
 
@@ -246,7 +246,7 @@ fn render_katex(input: &str) -> Result<String, Box<dyn Error>> {
 
 fn syntax_highlight(lang: &str, input: &str) -> Result<String, Box<dyn Error>> {
     use syntect::parsing::SyntaxSet;
-    use syntect::highlighting::{Color, ThemeSet};
+    use syntect::highlighting::ThemeSet;
     use syntect::html::highlighted_html_for_string;
 
     let ss = SyntaxSet::load_defaults_newlines();
