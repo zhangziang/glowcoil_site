@@ -255,6 +255,5 @@ fn syntax_highlight(lang: &str, input: &str) -> Result<String, Box<dyn Error>> {
     let syntax = ss.find_syntax_by_token(lang).ok_or(format!("language \"{}\" not found", lang))?;
 
     let theme = &ts.themes["base16-ocean.light"];
-    let bg = theme.settings.background.unwrap_or(Color::WHITE);
     Ok(highlighted_html_for_string(input, &ss, &syntax, theme))
 }
