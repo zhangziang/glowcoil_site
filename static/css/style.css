@@ -39,7 +39,7 @@ p {
 a {
   text-decoration: none;
   box-decoration-break: clone;
-  padding: 2px 5px;
+  padding: 2px 3px;
   text-decoration: none;
 
   color: rgb(57, 80, 99);
@@ -122,4 +122,10 @@ code, pre {
   font-family: 'fira-mono', monospace;
   font-size: 12px;
   background-color: rgb(226, 233, 240);
+  color: rgb(57, 80, 99);
+}
+
+a code {
+  color: rgb(49, 147, 198);
+  background-color: rgb(207, 238, 255);
 }
