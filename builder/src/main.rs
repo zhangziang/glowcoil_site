@@ -250,10 +250,9 @@ fn syntax_highlight(lang: &str, input: &str) -> Result<String, Box<dyn Error>> {
     use syntect::html::highlighted_html_for_string;
 
     let ss = SyntaxSet::load_defaults_newlines();
-    let ts = ThemeSet::load_defaults();
+    let theme = ThemeSet::get_theme("dropin.tmtheme").unwrap();
 
     let syntax = ss.find_syntax_by_token(lang).ok_or(format!("language \"{}\" not found", lang))?;
 
-    let theme = &ts.themes["base16-ocean.light"];
-    Ok(highlighted_html_for_string(input, &ss, &syntax, theme))
+    Ok(highlighted_html_for_string(input, &ss, &syntax, &theme))
 }
