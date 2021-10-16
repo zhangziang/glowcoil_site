@@ -86,6 +86,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         let mut index = String::new();
         index.push_str(&header);
+
+        index.push_str(&render_markdown(&read_to_string("home.md")?)?);
+
         index.push_str(&read_to_string("templates/post-list-begin.html")?);
 
         let post_list_item = read_to_string("templates/post-list-item.html")?;
