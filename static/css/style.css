@@ -116,6 +116,7 @@ code {
 pre {
   padding: 12px;
   margin: 12px;
+  overflow-x: auto;
 }
 
 code, pre {
