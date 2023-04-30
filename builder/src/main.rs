@@ -3,6 +3,24 @@ use std::error::Error;
 use std::fs::*;
 use std::path::{Path, PathBuf};
 
+use serde::Deserialize;
+
+struct Post {
+    url: String,
+    metadata: Metadata,
+    excerpt: String,
+}
+
+#[derive(Deserialize)]
+struct Metadata {
+    #[serde(default)]
+    title: String,
+    #[serde(default)]
+    date: String,
+    #[serde(default)]
+    draft: bool,
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let _ = remove_dir_all("output/");
     create_dir("output/")?;
@@ -31,17 +49,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         let post = post?;
         let mut url = "posts/".to_string();
         let post_filename = post.file_name().into_string().map_err(|_| "")?;
-        if post_filename.starts_with('_') { continue; }
-        url.push_str(&post_filename[9..].to_string());
+        url.push_str(&post_filename[11..].to_string());
 
-        let mut info_path = post.path().to_path_buf();
-        info_path.push("info.txt");
-        let info = read_to_string(info_path)?;
-        let info_lines: Vec<&str> = info.lines().collect();
+        let mut contents_path = post.path().to_path_buf();
+        contents_path.push("index.md");
 
-        let title = info_lines[0].to_string();
-        let date = info_lines[1].to_string();
-        posts.push((url.clone(), title.clone(), date.clone()));
+        let source = read_to_string(contents_path)?;
+
+        let mut parts = source.split("+++");
+        let _ = parts.next().ok_or_else(|| format!("unexpected content before front matter in {}", post_filename))?;
+        let front = parts.next().ok_or_else(|| format!("expected front matter in {}", post_filename))?;
+        let content = parts.next().ok_or_else(|| format!("expected content after front matter in {}", post_filename))?;
+
+        let metadata: Metadata = toml::from_str(front)?;
+
+        if metadata.draft {
+            continue;
+        }
 
         let mut out_dir = PathBuf::from("output/");
         out_dir.push(&url);
@@ -51,34 +75,40 @@ fn main() -> Result<(), Box<dyn Error>> {
         for file in read_dir(post.path())? {
             let file = file?;
             let file_name = file.file_name();
-            if file_name != "index.md" && file_name != "info.txt" {
+            if file_name != "index.md" {
                 let mut out_path = out_dir.clone();
                 out_path.push(file_name);
                 copy(file.path(), out_path)?;
             }
         }
 
-        let mut contents_path = post.path().to_path_buf();
-        contents_path.push("index.md");
-
-        let contents = render_markdown(&render_katex(&read_to_string(contents_path)?)?)?;
-
-        let mut vars = HashMap::new();
-        vars.insert("date".to_string(), date);
-        vars.insert("title".to_string(), title);
+        let rendered = render_markdown(&render_katex(content)?)?;
 
         let mut post = String::new();
         post.push_str(&header);
         post.push_str(&post_header);
-        post.push_str(&contents);
+        post.push_str(&rendered);
         post.push_str(&footer);
+
+        let mut vars = HashMap::new();
+        vars.insert("date".to_string(), metadata.date.clone());
+        vars.insert("title".to_string(), metadata.title.clone());
+        let substituted = substitute(&post, &vars);
 
         let mut post_dir = out_dir.clone();
         post_dir.push("index.html");
-        write(post_dir, substitute(&post, &vars))?;
+        write(post_dir, &substituted)?;
+
+        let excerpt = rendered.split("<!--excerpt-->").nth(0).unwrap().to_string();
+
+        posts.push(Post {
+            url,
+            metadata,
+            excerpt,
+        });
     }
 
-    posts.sort_by(|a, b| a.2.cmp(&b.2).reverse());
+    posts.sort_by(|a, b| a.metadata.date.cmp(&b.metadata.date).reverse());
 
     {
         let mut vars = HashMap::new();
@@ -87,16 +117,15 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut index = String::new();
         index.push_str(&header);
 
-        index.push_str(&render_markdown(&read_to_string("home.md")?)?);
-
         index.push_str(&read_to_string("templates/post-list-begin.html")?);
 
         let post_list_item = read_to_string("templates/post-list-item.html")?;
-        for (url, title, date) in posts {
+        for post in posts {
             let mut vars = HashMap::new();
-            vars.insert("url".to_string(), url);
-            vars.insert("date".to_string(), date);
-            vars.insert("title".to_string(), title);
+            vars.insert("url".to_string(), post.url);
+            vars.insert("date".to_string(), post.metadata.date);
+            vars.insert("title".to_string(), post.metadata.title);
+            vars.insert("excerpt".to_string(), post.excerpt);
             index.push_str(&substitute(&post_list_item, &vars));
         }
 
@@ -107,6 +136,23 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         copy("output/index.html", "output/posts/index.html")?;
     }    
+
+    {
+        let source = read_to_string("pages/about.md")?;
+        let rendered = render_markdown(&source)?;
+
+        let mut page = String::new();
+        page.push_str(&header);
+        page.push_str(&rendered);
+        page.push_str(&footer);
+
+        let mut vars = HashMap::new();
+        vars.insert("title".to_string(), "about me".to_string());
+        let substituted = substitute(&page, &vars);
+
+        create_dir("output/about/")?;
+        write("output/about/index.html", &substituted)?;
+    }
 
     Ok(())
 }
@@ -171,8 +217,8 @@ fn render_markdown(input: &str) -> Result<String, Box<dyn Error>> {
         match event {
             Start(Paragraph) => output.push_str("<p>"),
             End(Paragraph) => output.push_str("</p>"),
-            Start(Heading(_)) => output.push_str("<div class=\"heading\">"),
-            End(Heading(_)) => output.push_str("</div>"),
+            Start(Heading(_)) => output.push_str("<h3>"),
+            End(Heading(_)) => output.push_str("</h3>"),
             Start(CodeBlock(info)) => {
                 let lang = if let CodeBlockKind::Fenced(info) = info {
                     info.split(' ').next().unwrap().to_string()

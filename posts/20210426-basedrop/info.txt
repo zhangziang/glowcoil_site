@@ -1,2 +1,0 @@
-basedrop: a garbage collector for real-time audio in Rust
-2021-04-26

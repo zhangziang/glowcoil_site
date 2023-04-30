@@ -1,3 +1,8 @@
++++
+title = "The amplitwist, the conjugate transpose, and the complex derivative"
+date = "2019-12-29"
++++
+
 Complex numbers have a representation as \(2 \times 2\) matrices, which can serve to illuminate some initially non-obvious aspects of how they work. A real number \(a\) can be represented as a multiple of the identity matrix:
 
 \[ aI = \begin{bmatrix} a & 0 \\ 0 & a \end{bmatrix} \]
@@ -11,6 +16,8 @@ We can thus represent any complex number \(a+bi\) as:
 \[ aI+bJ = \begin{bmatrix} a & -b \\ b & a \end{bmatrix} \]
 
 It can be verified that addition and multiplication of these matrices is equivalent to addition and multiplication of the complex numbers they represent (meaning that matrices of this form comprise a field isomorphic to \(\mathbb{C}\)).
+
+<!--excerpt-->
 
 # The amplitwist
 

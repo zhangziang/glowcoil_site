@@ -1,6 +1,13 @@
++++
+title = "LLQ: A wait-free SPSC linked-list queue with recyclable nodes"
+date = "2022-12-04"
++++
+
 Last year, I published a Rust library called [basedrop](https://glowcoil.com/posts/basedrop/), which implements a memory reclamation system tailored to the constraints of real-time audio scenarios. The purpose of basedrop is to make it easy to share dynamically allocated memory with a real-time audio thread while ensuring that no allocations or deallocations happen on that thread. This is accomplished by providing a set of smart pointers (analogous to `Box` and `Arc` from the Rust standard library) which do not directly free their associated allocation when dropped, but instead automatically push it onto a lock-free queue to be collected later on another thread.
 
 Basedrop's design has some compelling benefits: it frees you from having to write code by hand every time you want to transfer an object to another thread to be freed, and if you restrict yourself to its vocabulary of smart pointers, it eliminates the possibility of accidentally dropping an allocation on the real-time thread (a mistake which can easily remain invisible if you don't have something like [`assert_no_alloc`](https://github.com/Windfisch/rust-assert-no-alloc) to catch it). However, after talking with some developers trying to make use of basedrop in real projects, it became clear to me that these benefits come at the cost of a somewhat opinionated API, making it difficult to integrate with certain program architectures. I decided that a stripped-down version of the core linked-list queue would probably have some value, and the end result of that was the [llq](https://github.com/glowcoil/llq) crate.
+
+<!--excerpt-->
 
 A central piece of basedrop's design is the [`Node<T>`](https://docs.rs/basedrop/0.1.2/basedrop/struct.Node.html) type, which represents a node that can potentially be added to the collector queue's linked list. Each of basedrop's smart pointers allocates a `Node<T>` on the heap at creation time, so when the time comes to mark the contained object as ready for deallocation, that node already exists, stored inline as part of the original allocation, and can simply be linked into the queue. This makes it possible to send an object back from the real-time thread to be reclaimed without performing any allocator operations.
 
