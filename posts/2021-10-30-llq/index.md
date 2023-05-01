@@ -1,6 +1,6 @@
 +++
 title = "LLQ: A wait-free SPSC linked-list queue with recyclable nodes"
-date = "2022-12-04"
+date = "2022-12-04T15:39:00-06:00"
 +++
 
 Last year, I published a Rust library called [basedrop](https://glowcoil.com/posts/basedrop/), which implements a memory reclamation system tailored to the constraints of real-time audio scenarios. The purpose of basedrop is to make it easy to share dynamically allocated memory with a real-time audio thread while ensuring that no allocations or deallocations happen on that thread. This is accomplished by providing a set of smart pointers (analogous to `Box` and `Arc` from the Rust standard library) which do not directly free their associated allocation when dropped, but instead automatically push it onto a lock-free queue to be collected later on another thread.

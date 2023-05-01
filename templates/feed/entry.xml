@@ -1,0 +1,13 @@
+<entry>
+    <id>https://glowcoil.com/${url}</id>
+    <title type="html">${title}</title>
+    <published>${published}</published>
+    <updated>${updated}</updated>
+    <link rel="alternate" href="https://glowcoil.com/${url}" type="text/html"/>
+    <content type="html">
+        <![CDATA[${content}]]>
+    </content>
+    <summary type="html">
+        <![CDATA[${summary}]]>
+    </summary>
+</entry>

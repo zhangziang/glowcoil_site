@@ -1,6 +1,6 @@
 +++
 title = "Basedrop: A garbage collector for real-time audio in Rust"
-date = "2021-04-26"
+date = "2021-04-26T10:18:00-05:00"
 +++
 
 In real-time audio, deadlines are critical. Your code has on the order of several milliseconds to fill a buffer with samples to be shipped off to the [DAC](https://en.wikipedia.org/wiki/Digital-to-analog_converter), milliseconds which it may be sharing with a number of other audio plugins. If your code takes too long to produce those samples, there are no second chances; they simply won't get played, and the user will hear an objectionable glitch or stutter instead.

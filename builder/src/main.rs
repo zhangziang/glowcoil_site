@@ -2,13 +2,18 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fs::*;
 use std::path::{Path, PathBuf};
+use std::io::{BufWriter, Write};
+use std::str::FromStr;
 
+use chrono::{DateTime, FixedOffset, Local, SecondsFormat};
 use serde::Deserialize;
 
 struct Post {
     url: String,
-    metadata: Metadata,
+    title: String,
+    date: DateTime<FixedOffset>,
     excerpt: String,
+    contents: String,
 }
 
 #[derive(Deserialize)]
@@ -22,6 +27,8 @@ struct Metadata {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let now = Local::now();
+
     let _ = remove_dir_all("output/");
     create_dir("output/")?;
     copy_dir("static/", "output/")?;
@@ -67,6 +74,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             continue;
         }
 
+        let date = DateTime::from_str(&metadata.date)?;
+
         let mut out_dir = PathBuf::from("output/");
         out_dir.push(&url);
 
@@ -91,7 +100,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         post.push_str(&footer);
 
         let mut vars = HashMap::new();
-        vars.insert("date".to_string(), metadata.date.clone());
+        vars.insert("date".to_string(), format!("{}", date.format("%Y-%m-%d")));
         vars.insert("title".to_string(), metadata.title.clone());
         let substituted = substitute(&post, &vars);
 
@@ -103,12 +112,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         posts.push(Post {
             url,
-            metadata,
+            title: metadata.title,
+            date,
             excerpt,
+            contents: rendered,
         });
     }
 
-    posts.sort_by(|a, b| a.metadata.date.cmp(&b.metadata.date).reverse());
+    posts.sort_by(|a, b| a.date.cmp(&b.date).reverse());
 
     {
         let mut vars = HashMap::new();
@@ -120,12 +131,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         index.push_str(&read_to_string("templates/post-list-begin.html")?);
 
         let post_list_item = read_to_string("templates/post-list-item.html")?;
-        for post in posts {
+        for post in &posts {
             let mut vars = HashMap::new();
-            vars.insert("url".to_string(), post.url);
-            vars.insert("date".to_string(), post.metadata.date);
-            vars.insert("title".to_string(), post.metadata.title);
-            vars.insert("excerpt".to_string(), post.excerpt);
+            vars.insert("url".to_string(), post.url.clone());
+            vars.insert("date".to_string(), format!("{}", post.date.format("%Y-%m-%d")));
+            vars.insert("title".to_string(), post.title.clone());
+            vars.insert("excerpt".to_string(), post.excerpt.clone());
             index.push_str(&substitute(&post_list_item, &vars));
         }
 
@@ -152,6 +163,35 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         create_dir("output/about/")?;
         write("output/about/index.html", &substituted)?;
+    }
+
+    {
+        let header = read_to_string("templates/feed/header.xml")?;
+        let entry = read_to_string("templates/feed/entry.xml")?;
+        let footer = read_to_string("templates/feed/footer.xml")?;
+
+        let mut w = BufWriter::new(File::create("output/feed.xml")?);
+
+        let updated = now.to_rfc3339_opts(SecondsFormat::Secs, true);
+
+        let mut vars = HashMap::new();
+        vars.insert("updated".to_string(), updated.clone());
+        write!(w, "{}", substitute(&header, &vars))?;
+
+        for post in &posts {
+            let date = post.date.to_rfc3339_opts(SecondsFormat::Secs, true);
+
+            let mut vars = HashMap::new();
+            vars.insert("url".to_string(), post.url.clone());
+            vars.insert("title".to_string(), post.title.clone());
+            vars.insert("published".to_string(), date.clone());
+            vars.insert("updated".to_string(), date.clone());
+            vars.insert("content".to_string(), post.contents.clone());
+            vars.insert("summary".to_string(), post.excerpt.clone());
+            write!(w, "{}", substitute(&entry, &vars))?;
+        }
+
+        write!(w, "{}", footer)?;
     }
 
     Ok(())
@@ -279,7 +319,6 @@ fn render_markdown(input: &str) -> Result<String, Box<dyn Error>> {
 }
 
 fn render_katex(input: &str) -> Result<String, Box<dyn Error>> {
-    use std::io::Write;
     use std::process::{Command, Stdio};
 
     let mut child = Command::new("node")

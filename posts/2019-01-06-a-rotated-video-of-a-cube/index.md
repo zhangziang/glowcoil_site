@@ -1,6 +1,6 @@
 +++
 title = "A rotated video of a cube"
-date = "2019-01-06"
+date = "2019-01-07T21:52:00-06:00"
 +++
 
 The following is a video of a rotating cube:

@@ -1,6 +1,6 @@
 +++
 title = "The amplitwist, the conjugate transpose, and the complex derivative"
-date = "2019-12-29"
+date = "2019-12-29T14:50:44-06:00"
 +++
 
 Complex numbers have a representation as \(2 \times 2\) matrices, which can serve to illuminate some initially non-obvious aspects of how they work. A real number \(a\) can be represented as a multiple of the identity matrix:
