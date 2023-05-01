@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::*;
-use std::path::{Path, PathBuf};
 use std::io::{BufWriter, Write};
+use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
 use chrono::{DateTime, FixedOffset, Local, SecondsFormat};
@@ -64,9 +64,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         let source = read_to_string(contents_path)?;
 
         let mut parts = source.split("+++");
-        let _ = parts.next().ok_or_else(|| format!("unexpected content before front matter in {}", post_filename))?;
-        let front = parts.next().ok_or_else(|| format!("expected front matter in {}", post_filename))?;
-        let content = parts.next().ok_or_else(|| format!("expected content after front matter in {}", post_filename))?;
+        let _ = parts.next().ok_or_else(|| {
+            format!(
+                "unexpected content before front matter in {}",
+                post_filename
+            )
+        })?;
+        let front = parts
+            .next()
+            .ok_or_else(|| format!("expected front matter in {}", post_filename))?;
+        let content = parts
+            .next()
+            .ok_or_else(|| format!("expected content after front matter in {}", post_filename))?;
 
         let metadata: Metadata = toml::from_str(front)?;
 
@@ -134,7 +143,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         for post in &posts {
             let mut vars = HashMap::new();
             vars.insert("url".to_string(), post.url.clone());
-            vars.insert("date".to_string(), format!("{}", post.date.format("%Y-%m-%d")));
+            vars.insert(
+                "date".to_string(),
+                format!("{}", post.date.format("%Y-%m-%d")),
+            );
             vars.insert("title".to_string(), post.title.clone());
             vars.insert("excerpt".to_string(), post.excerpt.clone());
             index.push_str(&substitute(&post_list_item, &vars));
@@ -146,7 +158,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         write("output/index.html", substitute(&index, &vars))?;
 
         copy("output/index.html", "output/posts/index.html")?;
-    }    
+    }
 
     {
         let source = read_to_string("pages/about.md")?;
@@ -248,7 +260,13 @@ fn substitute(input: &str, vars: &HashMap<String, String>) -> String {
 }
 
 fn render_markdown(input: &str) -> Result<String, Box<dyn Error>> {
-    use pulldown_cmark::{CodeBlockKind, Event::*, Parser, Tag::*, escape::{escape_href, escape_html}};
+    use pulldown_cmark::{
+        escape::{escape_href, escape_html},
+        CodeBlockKind,
+        Event::*,
+        Parser,
+        Tag::*,
+    };
 
     let mut output = String::new();
 
@@ -327,20 +345,26 @@ fn render_katex(input: &str) -> Result<String, Box<dyn Error>> {
         .stdout(Stdio::piped())
         .spawn()?;
 
-    child.stdin.as_mut().ok_or("couldn't open katex")?.write_all(input.as_bytes())?;
+    child
+        .stdin
+        .as_mut()
+        .ok_or("couldn't open katex")?
+        .write_all(input.as_bytes())?;
     let output = child.wait_with_output()?;
     Ok(String::from_utf8_lossy(&output.stdout).into_owned())
 }
 
 fn syntax_highlight(lang: &str, input: &str) -> Result<String, Box<dyn Error>> {
-    use syntect::parsing::SyntaxSet;
     use syntect::highlighting::ThemeSet;
     use syntect::html::highlighted_html_for_string;
+    use syntect::parsing::SyntaxSet;
 
     let ss = SyntaxSet::load_defaults_newlines();
     let theme = ThemeSet::get_theme("dropin.tmtheme").unwrap();
 
-    let syntax = ss.find_syntax_by_token(lang).ok_or(format!("language \"{}\" not found", lang))?;
+    let syntax = ss
+        .find_syntax_by_token(lang)
+        .ok_or(format!("language \"{}\" not found", lang))?;
 
     Ok(highlighted_html_for_string(input, &ss, &syntax, &theme))
 }
